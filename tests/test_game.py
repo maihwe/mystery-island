@@ -1,5 +1,6 @@
 """Automated tests for Mystery Island game logic."""
 import unittest
+from copy import deepcopy
 
 from game import (
     new_game,
@@ -7,6 +8,8 @@ from game import (
     available_actions,
     can_cross_bridge,
     can_light_beacon,
+    describe_location,
+    is_win,
     LOCATIONS,
     STARTING_ENERGY,
 )
@@ -16,7 +19,7 @@ class TestNewGame(unittest.TestCase):
     def test_t1_new_game_defaults(self):
         p = new_game("Ada")
         self.assertEqual(p["location"], "Beach")
-        self.assertEqual(p["energy"], STARTING_ENERGY)
+        self.assertEqual(p["energy"], 5)
         self.assertEqual(p["inventory"], [])
         self.assertFalse(p["game_over"])
         self.assertFalse(p["won"])
@@ -25,13 +28,17 @@ class TestNewGame(unittest.TestCase):
 class TestInvalidInput(unittest.TestCase):
     def test_t2_invalid_command_does_not_mutate(self):
         p = new_game("Ada")
-        before = dict(p)
-        before["inventory"] = list(p["inventory"])
-        apply_action(p, "banana")
-        self.assertEqual(p["location"], before["location"])
-        self.assertEqual(p["energy"], before["energy"])
-        self.assertEqual(p["inventory"], before["inventory"])
-        self.assertFalse(p["game_over"])
+        for command in (
+            "banana", "", "   ", "go sideways", "go south", "take lantern",
+            "cross bridge", "light beacon",
+        ):
+            with self.subTest(command=command):
+                p = new_game("Ada")
+                before = deepcopy(p)
+                result = apply_action(p, command)
+                self.assertFalse(result["ok"])
+                self.assertFalse(result["energy_used"])
+                self.assertEqual(p, before)
 
     def test_wrong_direction_rejected_without_cost(self):
         p = new_game("Ada")
@@ -68,6 +75,27 @@ class TestInventory(unittest.TestCase):
         self.assertFalse(r2["ok"])
         self.assertEqual(p["inventory"].count("rope"), 1)
 
+    def test_lantern_collected_once_without_cost(self):
+        p = new_game("Ada")
+        apply_action(p, "north")
+        apply_action(p, "east")
+        result = apply_action(p, "take lantern")
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["energy_used"])
+        self.assertEqual(p["energy"], 3)
+        before = deepcopy(p)
+        result = apply_action(p, "take lantern")
+        self.assertFalse(result["ok"])
+        self.assertEqual(p, before)
+
+    def test_rope_pickup_is_free(self):
+        p = new_game("Ada")
+        apply_action(p, "north")
+        result = apply_action(p, "take rope")
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["energy_used"])
+        self.assertEqual(p["energy"], 4)
+
 
 class TestPuzzles(unittest.TestCase):
     def test_t6_bridge_blocked_without_rope(self):
@@ -77,9 +105,10 @@ class TestPuzzles(unittest.TestCase):
         apply_action(p, "go north")
         self.assertEqual(p["location"], "Old Bridge")
         self.assertFalse(can_cross_bridge(p))
+        before = deepcopy(p)
         r = apply_action(p, "cross bridge")
         self.assertFalse(r["ok"])
-        self.assertEqual(p["location"], "Old Bridge")
+        self.assertEqual(p, before)
 
     def test_t6b_old_bridge_has_no_direct_north_route(self):
         p = new_game("Ada")
@@ -94,9 +123,10 @@ class TestPuzzles(unittest.TestCase):
         p["location"] = "Lighthouse"
         p["inventory"] = ["rope"]
         self.assertFalse(can_light_beacon(p))
+        before = deepcopy(p)
         r = apply_action(p, "light beacon")
         self.assertFalse(r["ok"])
-        self.assertFalse(p["won"])
+        self.assertEqual(p, before)
 
     def test_t8_win_with_correct_items(self):
         p = new_game("Ada")
@@ -110,7 +140,49 @@ class TestPuzzles(unittest.TestCase):
         self.assertTrue(r["ok"])
         self.assertTrue(p["won"])
         self.assertTrue(p["game_over"])
-        self.assertGreaterEqual(p["energy"], 0)
+        self.assertEqual(p["location"], "Lighthouse")
+        self.assertEqual(p["energy"], 1)
+        self.assertFalse(r["energy_used"])
+        self.assertTrue(is_win(p))
+
+    def test_cannot_light_beacon_at_wrong_location_with_items(self):
+        p = new_game("Ada")
+        p["inventory"] = ["rope", "lantern"]
+        before = deepcopy(p)
+        self.assertFalse(can_light_beacon(p))
+        result = apply_action(p, "light beacon")
+        self.assertFalse(result["ok"])
+        self.assertEqual(p, before)
+
+    def test_crossing_bridge_costs_exactly_one_energy(self):
+        p = new_game("Ada")
+        p["location"] = "Old Bridge"
+        p["inventory"] = ["rope"]
+        result = apply_action(p, "cross bridge")
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["energy_used"])
+        self.assertEqual(p["location"], "Lighthouse")
+        self.assertEqual(p["energy"], 4)
+
+    def test_puzzle_checks_do_not_change_state(self):
+        p = new_game("Ada")
+        p["location"] = "Old Bridge"
+        p["inventory"] = ["rope", "lantern"]
+        before = deepcopy(p)
+        self.assertTrue(can_cross_bridge(p))
+        self.assertFalse(can_light_beacon(p))
+        self.assertEqual(p, before)
+
+    def test_puzzle_checks_reject_finished_game(self):
+        for location, check in (
+            ("Old Bridge", can_cross_bridge), ("Lighthouse", can_light_beacon),
+        ):
+            with self.subTest(location=location):
+                p = new_game("Ada")
+                p["location"] = location
+                p["inventory"] = ["rope", "lantern"]
+                p["game_over"] = True
+                self.assertFalse(check(p))
 
 
 class TestEnergy(unittest.TestCase):
@@ -123,11 +195,49 @@ class TestEnergy(unittest.TestCase):
         self.assertFalse(p["won"])
 
     def test_cannot_move_after_game_over(self):
+        for command in ("north", "take rope", "light beacon", "quit", "look"):
+            with self.subTest(command=command):
+                p = new_game("Ada")
+                p["game_over"] = True
+                before = deepcopy(p)
+                result = apply_action(p, command)
+                self.assertFalse(result["ok"])
+                self.assertEqual(p, before)
+
+    def test_final_energy_point_on_bridge_causes_loss_before_beacon(self):
         p = new_game("Ada")
-        p["game_over"] = True
-        before = p["location"]
-        apply_action(p, "go north")
-        self.assertEqual(p["location"], before)
+        p["location"] = "Old Bridge"
+        p["inventory"] = ["rope", "lantern"]
+        p["energy"] = 1
+        result = apply_action(p, "cross bridge")
+        self.assertTrue(result["ok"])
+        self.assertEqual(p["location"], "Lighthouse")
+        self.assertEqual(p["energy"], 0)
+        self.assertTrue(p["game_over"])
+        self.assertFalse(p["won"])
+        before = deepcopy(p)
+        self.assertFalse(apply_action(p, "light beacon")["ok"])
+        self.assertEqual(p, before)
+
+    def test_losing_path_stops_at_zero(self):
+        p = new_game("Ada")
+        for command in ("north", "south", "north", "south", "north"):
+            apply_action(p, command)
+        self.assertEqual(p["energy"], 0)
+        self.assertTrue(p["game_over"])
+        self.assertFalse(is_win(p))
+        self.assertFalse(apply_action(p, "south")["ok"])
+        self.assertEqual(p["energy"], 0)
+
+    def test_beacon_requires_positive_energy_even_in_prepared_state(self):
+        p = new_game("Ada")
+        p["location"] = "Lighthouse"
+        p["inventory"] = ["lantern"]
+        p["energy"] = 0
+        before = deepcopy(p)
+        self.assertFalse(can_light_beacon(p))
+        self.assertFalse(apply_action(p, "light beacon")["ok"])
+        self.assertEqual(p, before)
 
 
 class TestReplay(unittest.TestCase):
@@ -144,6 +254,54 @@ class TestReplay(unittest.TestCase):
         self.assertEqual(fresh["inventory"], [])
         self.assertFalse(fresh["game_over"])
         self.assertFalse(fresh["won"])
+        self.assertIsNot(fresh["inventory"], old["inventory"])
+
+    def test_new_games_have_independent_inventories(self):
+        first = new_game("Ada")
+        second = new_game("Bea")
+        self.assertIsNot(first["inventory"], second["inventory"])
+        first["inventory"].append("rope")
+        self.assertEqual(second["inventory"], [])
+
+
+class TestMenuAndInformation(unittest.TestCase):
+    def test_menu_and_information_do_not_change_state(self):
+        p = new_game("Ada")
+        before = deepcopy(p)
+        self.assertIn("go north", available_actions(p))
+        self.assertIn("trail", describe_location(p))
+        for command in ("look", "inventory"):
+            result = apply_action(p, command)
+            self.assertTrue(result["ok"])
+            self.assertFalse(result["energy_used"])
+        self.assertEqual(p, before)
+
+    def test_menu_and_scene_stop_offering_collected_item(self):
+        p = new_game("Ada")
+        apply_action(p, "north")
+        self.assertIn("take rope", available_actions(p))
+        self.assertIn("You see a rope here.", describe_location(p))
+        apply_action(p, "take rope")
+        self.assertNotIn("take rope", available_actions(p))
+        self.assertNotIn("You see a rope here.", describe_location(p))
+
+    def test_no_actions_after_game_over(self):
+        p = new_game("Ada")
+        apply_action(p, "quit")
+        self.assertEqual(available_actions(p), [])
+
+    def test_quit_aliases_accept_case_and_whitespace_without_energy_cost(self):
+        for command in ("quit", " EXIT ", " Q "):
+            with self.subTest(command=command):
+                p = new_game("Ada")
+                result = apply_action(p, command)
+                self.assertTrue(result["ok"])
+                self.assertFalse(result["energy_used"])
+                self.assertEqual(p["energy"], 5)
+                self.assertEqual(p["location"], "Beach")
+                self.assertEqual(p["inventory"], [])
+                self.assertTrue(p["game_over"])
+                self.assertFalse(is_win(p))
 
 
 class TestMapIntegrity(unittest.TestCase):

@@ -1,0 +1,304 @@
+MYSTERY ISLAND — ACTUAL VERIFICATION
+Interpreter: Python 3.12.3
+Local virtual environment supplies the python command.
+Git HEAD during verification: 142a721e0515d2047c5f7876b7923e1bb853fef6
+The tested working tree includes uncommitted changes; HEAD is not a final submission SHA.
+This report verifies execution, not learner mastery.
+
+SHA-256 of tested source files:
+main.py: 216d0ef9931844369b30cec1dd443b530fa1fe94f54175dfec2a0829f24ba6c8
+game.py: 44828f0254c675e915a0529b6e2e079facedff89f0c7d93756bdb5fb93ae4f4b
+tests/test_game.py: c19f3a0627ca705227998ff2ec81206fbf5208a670ab9c188e03671af313070b
+tests/test_cli.py: 61af40cec2a06c1f21532fd1c6ed5ce3d59761abe9c50af94880484e7e97d8db
+
+$ python -m unittest discover -s tests -v
+test_blank_name_uses_sailor (test_cli.TestCLI.test_blank_name_uses_sailor) ... ok
+test_end_of_input_exits_without_traceback (test_cli.TestCLI.test_end_of_input_exits_without_traceback) ... ok
+test_invalid_input_recovers_and_exit_is_normalized (test_cli.TestCLI.test_invalid_input_recovers_and_exit_is_normalized) ... ok
+test_losing_path (test_cli.TestCLI.test_losing_path) ... ok
+test_replay_creates_fresh_state (test_cli.TestCLI.test_replay_creates_fresh_state) ... ok
+test_replay_rejects_unexpected_answer_then_accepts_no (test_cli.TestCLI.test_replay_rejects_unexpected_answer_then_accepts_no) ... ok
+test_winning_path (test_cli.TestCLI.test_winning_path) ... ok
+test_beacon_requires_positive_energy_even_in_prepared_state (test_game.TestEnergy.test_beacon_requires_positive_energy_even_in_prepared_state) ... ok
+test_cannot_move_after_game_over (test_game.TestEnergy.test_cannot_move_after_game_over) ... ok
+test_final_energy_point_on_bridge_causes_loss_before_beacon (test_game.TestEnergy.test_final_energy_point_on_bridge_causes_loss_before_beacon) ... ok
+test_losing_path_stops_at_zero (test_game.TestEnergy.test_losing_path_stops_at_zero) ... ok
+test_t9_energy_exhaustion_causes_loss (test_game.TestEnergy.test_t9_energy_exhaustion_causes_loss) ... ok
+test_t2_invalid_command_does_not_mutate (test_game.TestInvalidInput.test_t2_invalid_command_does_not_mutate) ... ok
+test_whitespace_and_case_insensitive (test_game.TestInvalidInput.test_whitespace_and_case_insensitive) ... ok
+test_wrong_direction_rejected_without_cost (test_game.TestInvalidInput.test_wrong_direction_rejected_without_cost) ... ok
+test_lantern_collected_once_without_cost (test_game.TestInventory.test_lantern_collected_once_without_cost) ... ok
+test_rope_pickup_is_free (test_game.TestInventory.test_rope_pickup_is_free) ... ok
+test_t5_rope_collected_once (test_game.TestInventory.test_t5_rope_collected_once) ... ok
+test_all_destinations_exist (test_game.TestMapIntegrity.test_all_destinations_exist) ... ok
+test_five_locations_present (test_game.TestMapIntegrity.test_five_locations_present) ... ok
+test_menu_and_information_do_not_change_state (test_game.TestMenuAndInformation.test_menu_and_information_do_not_change_state) ... ok
+test_menu_and_scene_stop_offering_collected_item (test_game.TestMenuAndInformation.test_menu_and_scene_stop_offering_collected_item) ... ok
+test_no_actions_after_game_over (test_game.TestMenuAndInformation.test_no_actions_after_game_over) ... ok
+test_quit_aliases_accept_case_and_whitespace_without_energy_cost (test_game.TestMenuAndInformation.test_quit_aliases_accept_case_and_whitespace_without_energy_cost) ... ok
+test_t3_legal_move_changes_location_and_energy_once (test_game.TestMovement.test_t3_legal_move_changes_location_and_energy_once) ... ok
+test_t1_new_game_defaults (test_game.TestNewGame.test_t1_new_game_defaults) ... ok
+test_cannot_light_beacon_at_wrong_location_with_items (test_game.TestPuzzles.test_cannot_light_beacon_at_wrong_location_with_items) ... ok
+test_crossing_bridge_costs_exactly_one_energy (test_game.TestPuzzles.test_crossing_bridge_costs_exactly_one_energy) ... ok
+test_puzzle_checks_do_not_change_state (test_game.TestPuzzles.test_puzzle_checks_do_not_change_state) ... ok
+test_puzzle_checks_reject_finished_game (test_game.TestPuzzles.test_puzzle_checks_reject_finished_game) ... ok
+test_t6_bridge_blocked_without_rope (test_game.TestPuzzles.test_t6_bridge_blocked_without_rope) ... ok
+test_t6b_old_bridge_has_no_direct_north_route (test_game.TestPuzzles.test_t6b_old_bridge_has_no_direct_north_route) ... ok
+test_t7_beacon_blocked_without_lantern (test_game.TestPuzzles.test_t7_beacon_blocked_without_lantern) ... ok
+test_t8_win_with_correct_items (test_game.TestPuzzles.test_t8_win_with_correct_items) ... ok
+test_new_games_have_independent_inventories (test_game.TestReplay.test_new_games_have_independent_inventories) ... ok
+test_t10_replay_resets_state (test_game.TestReplay.test_t10_replay_resets_state) ... ok
+
+----------------------------------------------------------------------
+Ran 36 tests in 0.915s
+
+OK
+
+
+WINNING PATH
+$ python main.py
+INPUT LINES (blank lines and surrounding spaces are intentional):
+Ada
+north
+take rope
+east
+take lantern
+north
+cross bridge
+light beacon
+n
+
+ACTUAL OUTPUT:
+============================================================
+        MYSTERY ISLAND — THE LOST LIGHTHOUSE
+============================================================
+You wake on a storm-wrecked beach. The lighthouse is dark,
+the bridge is broken, and a rescue boat needs a beacon to find you.
+Explore, collect what you need, restore the light, and survive.
+Energy starts at 5. Every move costs 1 energy. Invalid input is free.
+Pickups, looking, and lighting the beacon are free.
+Type a command shown in Options, such as 'go north' or 'take rope'.
+Use 'look', 'inventory', or 'quit' ('exit' and 'q' also quit).
+============================================================
+What is your name, sailor? 
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: empty
+Vines cover the trail. The beach is south; a cave entrance is east. You see a rope here.
+Options: go south | go east | take rope | inventory | look | quit
+
+> You pick up the rope.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: rope
+Vines cover the trail. The beach is south; a cave entrance is east.
+Options: go south | go east | inventory | look | quit
+
+> You travel east to the Cave.
+
+[Ada] Location: Cave | Energy: 3 | Inventory: rope
+You shelter beneath cool stone. The jungle is west; the old bridge is north. You see a lantern here.
+Options: go west | go north | take lantern | inventory | look | quit
+
+> You pick up the lantern.
+
+[Ada] Location: Cave | Energy: 3 | Inventory: rope, lantern
+You shelter beneath cool stone. The jungle is west; the old bridge is north.
+Options: go west | go north | inventory | look | quit
+
+> You travel north to the Old Bridge.
+
+[Ada] Location: Old Bridge | Energy: 2 | Inventory: rope, lantern
+The broken bridge leads to the lighthouse. You need rope to cross safely.
+Options: go south | cross bridge | inventory | look | quit
+
+> You cross the bridge to the Lighthouse.
+
+[Ada] Location: Lighthouse | Energy: 1 | Inventory: rope, lantern
+The beacon is dark. Use a lantern to light it and signal the rescue boat.
+Options: go south | light beacon | inventory | look | quit
+
+> You lit the beacon! A rescue boat is on its way.
+
+*** YOU WIN, Ada! ***
+Play again? (y/n): Fair winds. Goodbye.
+
+
+LOSING PATH
+$ python main.py
+INPUT LINES (blank lines and surrounding spaces are intentional):
+Ada
+north
+south
+north
+south
+north
+n
+
+ACTUAL OUTPUT:
+============================================================
+        MYSTERY ISLAND — THE LOST LIGHTHOUSE
+============================================================
+You wake on a storm-wrecked beach. The lighthouse is dark,
+the bridge is broken, and a rescue boat needs a beacon to find you.
+Explore, collect what you need, restore the light, and survive.
+Energy starts at 5. Every move costs 1 energy. Invalid input is free.
+Pickups, looking, and lighting the beacon are free.
+Type a command shown in Options, such as 'go north' or 'take rope'.
+Use 'look', 'inventory', or 'quit' ('exit' and 'q' also quit).
+============================================================
+What is your name, sailor? 
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: empty
+Vines cover the trail. The beach is south; a cave entrance is east. You see a rope here.
+Options: go south | go east | take rope | inventory | look | quit
+
+> You travel south to the Beach.
+
+[Ada] Location: Beach | Energy: 3 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle.
+
+[Ada] Location: Jungle | Energy: 2 | Inventory: empty
+Vines cover the trail. The beach is south; a cave entrance is east. You see a rope here.
+Options: go south | go east | take rope | inventory | look | quit
+
+> You travel south to the Beach.
+
+[Ada] Location: Beach | Energy: 1 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle. You ran out of energy before rescue. The island claims another sailor.
+
+*** YOU LOSE, Ada: your energy ran out. ***
+Play again? (y/n): Fair winds. Goodbye.
+
+
+INVALID INPUT AND EXIT
+$ python main.py
+INPUT LINES (blank lines and surrounding spaces are intentional):
+Ada
+
+banana
+  NORTH  
+ EXIT 
+n
+
+ACTUAL OUTPUT:
+============================================================
+        MYSTERY ISLAND — THE LOST LIGHTHOUSE
+============================================================
+You wake on a storm-wrecked beach. The lighthouse is dark,
+the bridge is broken, and a rescue boat needs a beacon to find you.
+Explore, collect what you need, restore the light, and survive.
+Energy starts at 5. Every move costs 1 energy. Invalid input is free.
+Pickups, looking, and lighting the beacon are free.
+Type a command shown in Options, such as 'go north' or 'take rope'.
+Use 'look', 'inventory', or 'quit' ('exit' and 'q' also quit).
+============================================================
+What is your name, sailor? 
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> I don't understand that action.
+
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> I don't understand that action.
+
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: empty
+Vines cover the trail. The beach is south; a cave entrance is east. You see a rope here.
+Options: go south | go east | take rope | inventory | look | quit
+
+> You abandon the island. Game over.
+
+*** YOU QUIT, Ada. ***
+Play again? (y/n): Fair winds. Goodbye.
+
+
+REPLAY
+$ python main.py
+INPUT LINES (blank lines and surrounding spaces are intentional):
+Ada
+north
+take rope
+quit
+ YES 
+inventory
+quit
+n
+
+ACTUAL OUTPUT:
+============================================================
+        MYSTERY ISLAND — THE LOST LIGHTHOUSE
+============================================================
+You wake on a storm-wrecked beach. The lighthouse is dark,
+the bridge is broken, and a rescue boat needs a beacon to find you.
+Explore, collect what you need, restore the light, and survive.
+Energy starts at 5. Every move costs 1 energy. Invalid input is free.
+Pickups, looking, and lighting the beacon are free.
+Type a command shown in Options, such as 'go north' or 'take rope'.
+Use 'look', 'inventory', or 'quit' ('exit' and 'q' also quit).
+============================================================
+What is your name, sailor? 
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You travel north to the Jungle.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: empty
+Vines cover the trail. The beach is south; a cave entrance is east. You see a rope here.
+Options: go south | go east | take rope | inventory | look | quit
+
+> You pick up the rope.
+
+[Ada] Location: Jungle | Energy: 4 | Inventory: rope
+Vines cover the trail. The beach is south; a cave entrance is east.
+Options: go south | go east | inventory | look | quit
+
+> You abandon the island. Game over.
+
+*** YOU QUIT, Ada. ***
+Play again? (y/n): 
+============================================================
+
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> Inventory: empty
+
+[Ada] Location: Beach | Energy: 5 | Inventory: empty
+You wake beside the wreck of your boat. A trail leads north into the jungle.
+Options: go north | inventory | look | quit
+
+> You abandon the island. Game over.
+
+*** YOU QUIT, Ada. ***
+Play again? (y/n): Fair winds. Goodbye.
+
+
+All four recorded CLI sessions exited with status 0.
+EOF handling is exercised by the unittest suite. Ctrl+C signal delivery was not automated.
+Regenerate evidence after changing source files.

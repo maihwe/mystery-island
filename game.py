@@ -1,6 +1,7 @@
 """
 Mystery Island — The Lost Lighthouse
-Pure game logic. No print() or input() calls here so functions are testable.
+Game rules without input() or print(). apply_action changes the supplied state;
+the other public functions only read state or create a new one.
 """
 
 STARTING_ENERGY = 5
@@ -26,6 +27,14 @@ PICKUPS = {
 
 VALID_DIRECTIONS = {"north", "south", "east", "west"}
 
+SCENES = {
+    "Beach": "You wake beside the wreck of your boat. A trail leads north into the jungle.",
+    "Jungle": "Vines cover the trail. The beach is south; a cave entrance is east.",
+    "Cave": "You shelter beneath cool stone. The jungle is west; the old bridge is north.",
+    "Old Bridge": "The broken bridge leads to the lighthouse. You need rope to cross safely.",
+    "Lighthouse": "The beacon is dark. Use a lantern to light it and signal the rescue boat.",
+}
+
 
 def new_game(name):
     """Return a fresh player state dictionary."""
@@ -41,8 +50,8 @@ def new_game(name):
 
 def available_actions(player):
     """
-    Return a list of legal action strings for the current state.
-    Keeps the game deterministic: same state -> same actions.
+    Return commands to show in the menu. Puzzle commands can still be blocked
+    by missing items. This function does not change the player.
     """
     if player["game_over"]:
         return []
@@ -51,7 +60,7 @@ def available_actions(player):
     actions = []
 
     # Movement
-    for direction, dest in LOCATIONS.get(loc, {}).items():
+    for direction in LOCATIONS.get(loc, {}):
         actions.append(f"go {direction}")
 
     # Pickup (only if something is there and not already held)
@@ -71,29 +80,64 @@ def available_actions(player):
     return actions
 
 
+def describe_location(player):
+    """Return the scene and mention any item that has not been collected."""
+    location = player["location"]
+    description = SCENES[location]
+    item = PICKUPS.get(location)
+    if item and item not in player["inventory"]:
+        description += f" You see a {item} here."
+    return description
+
+
 def can_cross_bridge(player):
-    """Bridge requires rope. Returns bool."""
-    return player["location"] == "Old Bridge" and "rope" in player["inventory"]
+    """Return whether an active player at the bridge has rope and energy."""
+    return (
+        not player["game_over"]
+        and player["energy"] > 0
+        and player["location"] == "Old Bridge"
+        and "rope" in player["inventory"]
+    )
 
 
 def can_light_beacon(player):
-    """Beacon requires lantern AND being at the Lighthouse."""
+    """Return whether the player can light the beacon before energy runs out."""
     return (
-        player["location"] == "Lighthouse"
+        not player["game_over"]
+        and player["energy"] > 0
+        and player["location"] == "Lighthouse"
         and "lantern" in player["inventory"]
     )
 
 
+def is_win(player):
+    """Return whether the game ended in a rescue."""
+    return player["game_over"] and player["won"]
+
+
 def _end_game(player, won):
-    """Set terminal flags. Centralised so rules stay consistent."""
+    """Set the end flags and return the outcome message."""
     player["game_over"] = True
     player["won"] = won
-    return {"message": "You lit the beacon! A rescue boat is on its way." if won
-            else "You ran out of energy before rescue. The island claims another sailor."}
+    if won:
+        return "You lit the beacon! A rescue boat is on its way."
+    return "You ran out of energy before rescue. The island claims another sailor."
+
+
+def _move_player(player, destination, message):
+    """Apply one legal move, charge one energy, and check for exhaustion."""
+    player["location"] = destination
+    player["energy"] = max(0, player["energy"] - 1)
+    if player["energy"] == 0:
+        message += " " + _end_game(player, won=False)
+    return {"ok": True, "message": message, "energy_used": True}
 
 
 def apply_action(player, action):
-    """Apply a single action string to the player dict (mutates in place)."""
+    """Apply a text command in place and return ok, message, and energy_used.
+
+    Rejected commands leave the whole player dictionary unchanged.
+    """
     action = action.strip().lower()
     result = {"ok": False, "message": "", "energy_used": False}
 
@@ -101,15 +145,15 @@ def apply_action(player, action):
         result["message"] = "The game is over."
         return result
 
-    # Informational / non-mutating
-    if action == "quit":
+    # Quit changes the end flags; informational commands below do not.
+    if action in {"quit", "exit", "q"}:
         player["game_over"] = True
         player["won"] = False
         result.update(ok=True, message="You abandon the island. Game over.")
         return result
 
     if action == "look":
-        result.update(ok=True, message=f"You are at the {player['location']}.")
+        result.update(ok=True, message=describe_location(player))
         return result
 
     if action == "inventory":
@@ -148,15 +192,7 @@ def apply_action(player, action):
         if dest is None:
             result["message"] = f"You cannot go {direction} from here."
             return result
-        player["location"] = dest
-        player["energy"] -= 1
-        result["energy_used"] = True
-        result["ok"] = True
-        result["message"] = f"You travel {direction} to the {dest}."
-        if player["energy"] <= 0:
-            player["energy"] = 0
-            result["message"] += " " + _end_game(player, won=False)["message"]
-        return result
+        return _move_player(player, dest, f"You travel {direction} to the {dest}.")
 
     # Bridge
     if action == "cross bridge":
@@ -166,13 +202,9 @@ def apply_action(player, action):
         if not can_cross_bridge(player):
             result["message"] = "The bridge is broken. You need a rope to cross safely."
             return result
-        player["location"] = "Lighthouse"
-        player["energy"] -= 1
-        result.update(ok=True, energy_used=True, message="You cross the bridge to the Lighthouse.")
-        if player["energy"] <= 0:
-            player["energy"] = 0
-            result["message"] += " " + _end_game(player, won=False)["message"]
-        return result
+        return _move_player(
+            player, "Lighthouse", "You cross the bridge to the Lighthouse."
+        )
 
     # Beacon
     if action == "light beacon":
@@ -180,10 +212,9 @@ def apply_action(player, action):
             result["message"] = "There is no beacon here."
             return result
         if not can_light_beacon(player):
-            result["message"] = "The beacon is dark. You need a lantern to light it."
+            result["message"] = "You need a lantern and remaining energy to light the beacon."
             return result
-        _end_game(player, won=True)
-        result.update(ok=True, message="You raise the lantern and light the beacon! Its beam cuts through the storm. Rescue is coming.")
+        result.update(ok=True, message=_end_game(player, won=True))
         return result
 
     result["message"] = "I don't understand that action."
